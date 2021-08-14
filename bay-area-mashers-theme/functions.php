@@ -101,4 +101,51 @@ function remark_remove_fetch_copyright() {
 }
 add_action('wp_head', 'remark_remove_fetch_copyright',0,0);
 
+# This extends functionality in the Stripe Payments Wordpress plugin
+# https://s-plugins.com/
+# So that you can include dynamic tags in the subject of the seller email
+# This code is based off of the asp_apply_dynamic_tags_on_email_body function
+# found in the process_ipn.php file in the Stripe Payments plugin
+function asp_apply_dynamic_tags_on_subject($subj, $post) {
+	$tags = array(
+		'{item_name}',
+		'{item_short_desc}',
+		'{item_quantity}',
+		'{item_url}',
+		'{payer_email}',
+		'{customer_name}',
+		'{transaction_id}',
+		'{item_price_curr}',
+		'{purchase_amt_curr}',
+		'{purchase_date}',
+		'{shipping_address}',
+		'{billing_address}',
+		'{coupon_code}'
+	);
+	$vals = array(
+		$post['item_name'],
+		$post['charge_description'],
+		$post['item_quantity'],
+		! empty( $post['item_url'] ) ? $post['item_url'] : '',
+		$post['stripeEmail'],
+		$post['customer_name'],
+		$post['txn_id'],
+		$post['item_price_curr'],
+		$post['purchase_amt_curr'],
+		$post['purchase_date'],
+		isset( $post['shipping_address'] ) ? $post['shipping_address'] : '',
+		isset( $post['billing_address'] ) ? $post['billing_address'] : '',
+		! empty( $post['coupon_code'] ) ? $post['coupon_code'] : ''
+	);
+	return stripslashes( str_replace( $tags, $vals, $subj ) );
+}
+#      The tag defined in the Stripe plugin      Our function name     Priority number-of-arguments
+add_filter('asp_seller_email_subject', 'asp_apply_dynamic_tags_on_subject', 10, 2);
+# The tag defined in the Stripe plugin : This is hard coded in the Stripe Plugin
+# Our function name : This is a function name I came up with, you can find it above here in this file
+# This is the priority of the filter, the default is 10 : https://developer.wordpress.org/reference/functions/add_filter/#parameters
+# This is the number of arguments passed to asp_seller_email_subject which is 2
+# The two arguments are 1) The subject text and 2) the associative array of the values the user entered
+
+
 ?>
